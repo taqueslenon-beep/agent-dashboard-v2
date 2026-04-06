@@ -145,23 +145,33 @@ export default function AgentesClient({ agents, skills, mcps, agentSkills, agent
               <div>
                 <p className="text-xs font-semibold text-ink mb-2">Sub-agentes</p>
                 <div className="space-y-2">
-                  {subAgents.map((sub) => (
-                    <div key={sub.id} className="flex items-center gap-3 pl-3 py-2 border-l-2 border-violet-200 bg-violet-50/30 rounded-r-lg">
-                      <span className="text-lg">{sub.icon}</span>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="text-xs font-semibold text-ink">{sub.name}</p>
-                          <StatusBadge status={sub.status} />
+                  {subAgents.map((sub) => {
+                    const sc = STATUS_COLORS[sub.status] ?? STATUS_COLORS.unknown
+                    return (
+                      <div key={sub.id} className="flex items-start gap-3 p-3 bg-white border border-border rounded-lg">
+                        <div className="h-8 w-8 rounded-md bg-violet-50 flex items-center justify-center text-base shrink-0">
+                          {sub.icon || '🔧'}
                         </div>
-                        <p className="text-[11px] text-muted mt-0.5">{sub.description}</p>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="text-xs font-semibold text-ink">{sub.name}</p>
+                            <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full ${sc.bg} ${sc.text}`}>
+                              <span className={`h-1 w-1 rounded-full ${sc.dot}`} />
+                              {STATUS_LABELS[sub.status] ?? sub.status}
+                            </span>
+                          </div>
+                          {sub.description && (
+                            <p className="text-[11px] text-muted mt-1 leading-relaxed">{sub.description}</p>
+                          )}
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {sub.tags.map((tag) => (
+                              <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded bg-surface text-muted">{tag}</span>
+                            ))}
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex flex-wrap gap-1 shrink-0">
-                        {sub.tags.slice(0, 3).map((tag) => (
-                          <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded bg-surface text-muted">{tag}</span>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </div>
             )}
