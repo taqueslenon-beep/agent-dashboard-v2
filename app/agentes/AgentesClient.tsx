@@ -22,12 +22,15 @@ function StatusBadge({ status }: { status: string }) {
   )
 }
 
+const DEPT_CONFIG: Record<string, { colors: string; label: string }> = {
+  juridico: { colors: 'bg-indigo-50 text-indigo-700', label: 'Jurídico' },
+  tecnico: { colors: 'bg-teal-50 text-teal-700', label: 'Técnico' },
+  administrativo: { colors: 'bg-amber-50 text-amber-700', label: 'Administrativo' },
+}
+
 function DeptBadge({ dept }: { dept: string }) {
-  const colors = dept === 'juridico'
-    ? 'bg-indigo-50 text-indigo-700'
-    : 'bg-teal-50 text-teal-700'
-  const label = dept === 'juridico' ? 'Jurídico' : 'Técnico'
-  return <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${colors}`}>{label}</span>
+  const cfg = DEPT_CONFIG[dept] ?? { colors: 'bg-slate-50 text-slate-600', label: dept }
+  return <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${cfg.colors}`}>{cfg.label}</span>
 }
 
 export default function AgentesClient({ agents, skills, mcps, agentSkills, agentMcps }: Props) {
@@ -36,6 +39,7 @@ export default function AgentesClient({ agents, skills, mcps, agentSkills, agent
   const departments = {
     juridico: agents.filter((a) => a.department === 'juridico'),
     tecnico: agents.filter((a) => a.department === 'tecnico'),
+    administrativo: agents.filter((a) => a.department === 'administrativo'),
   }
 
   function getAgentSkills(agentId: string) {
@@ -136,7 +140,7 @@ export default function AgentesClient({ agents, skills, mcps, agentSkills, agent
           <div className="flex items-center gap-2 mb-3">
             <DeptBadge dept={dept} />
             <h2 className="text-sm font-semibold text-ink">
-              {dept === 'juridico' ? 'Departamento Jurídico' : 'Departamento Técnico'}
+              {DEPT_CONFIG[dept]?.label ? `Departamento ${DEPT_CONFIG[dept].label}` : dept}
             </h2>
             <span className="text-xs text-muted">({deptAgents.length} agentes)</span>
           </div>
