@@ -26,6 +26,7 @@ const DEPT_CONFIG: Record<string, { colors: string; label: string }> = {
   juridico: { colors: 'bg-indigo-50 text-indigo-700', label: 'Jurídico' },
   tecnico: { colors: 'bg-teal-50 text-teal-700', label: 'Técnico' },
   administrativo: { colors: 'bg-amber-50 text-amber-700', label: 'Administrativo' },
+  comercial: { colors: 'bg-rose-50 text-rose-700', label: 'Comercial' },
 }
 
 function DeptBadge({ dept }: { dept: string }) {
@@ -40,6 +41,7 @@ export default function AgentesClient({ agents, skills, mcps, agentSkills, agent
     juridico: agents.filter((a) => a.department === 'juridico'),
     tecnico: agents.filter((a) => a.department === 'tecnico'),
     administrativo: agents.filter((a) => a.department === 'administrativo'),
+    comercial: agents.filter((a) => a.department === 'comercial'),
   }
 
   function getAgentSkills(agentId: string) {

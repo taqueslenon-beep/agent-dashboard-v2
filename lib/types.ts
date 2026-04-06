@@ -1,7 +1,7 @@
 export interface Agent {
   id: string
   name: string
-  department: 'juridico' | 'tecnico' | 'geral' | 'administrativo'
+  department: 'juridico' | 'tecnico' | 'geral' | 'administrativo' | 'comercial'
   level: number
   role: string | null
   framework: string
