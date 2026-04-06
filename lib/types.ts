@@ -11,6 +11,7 @@ export interface Agent {
   tags: string[]
   last_execution: string | null
   tasks_completed: number
+  parent_agent_id: string | null
   created_at: string
   updated_at: string
 }

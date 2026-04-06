@@ -37,11 +37,16 @@ function DeptBadge({ dept }: { dept: string }) {
 export default function AgentesClient({ agents, skills, mcps, agentSkills, agentMcps }: Props) {
   const [expanded, setExpanded] = useState<string | null>(null)
 
+  // Only top-level agents (no parent)
   const departments = {
-    juridico: agents.filter((a) => a.department === 'juridico'),
-    tecnico: agents.filter((a) => a.department === 'tecnico'),
-    administrativo: agents.filter((a) => a.department === 'administrativo'),
-    comercial: agents.filter((a) => a.department === 'comercial'),
+    juridico: agents.filter((a) => a.department === 'juridico' && !a.parent_agent_id),
+    tecnico: agents.filter((a) => a.department === 'tecnico' && !a.parent_agent_id),
+    administrativo: agents.filter((a) => a.department === 'administrativo' && !a.parent_agent_id),
+    comercial: agents.filter((a) => a.department === 'comercial' && !a.parent_agent_id),
+  }
+
+  function getSubAgents(agentId: string) {
+    return agents.filter((a) => a.parent_agent_id === agentId)
   }
 
   function getAgentSkills(agentId: string) {
@@ -58,6 +63,7 @@ export default function AgentesClient({ agents, skills, mcps, agentSkills, agent
     const isExpanded = expanded === agent.id
     const linkedSkills = getAgentSkills(agent.id)
     const linkedMcps = getAgentMcps(agent.id)
+    const subAgents = getSubAgents(agent.id)
 
     return (
       <div key={agent.id} className="bg-white rounded-lg border border-border overflow-hidden">
@@ -70,6 +76,11 @@ export default function AgentesClient({ agents, skills, mcps, agentSkills, agent
             <div className="flex items-center gap-2">
               <p className="text-sm font-semibold text-ink">{agent.name}</p>
               <StatusBadge status={agent.status} />
+              {subAgents.length > 0 && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-violet-50 text-violet-600">
+                  {subAgents.length} sub-agente{subAgents.length > 1 ? 's' : ''}
+                </span>
+              )}
             </div>
             <p className="text-xs text-muted mt-0.5">{agent.role} · {agent.framework}</p>
           </div>
@@ -129,6 +140,31 @@ export default function AgentesClient({ agents, skills, mcps, agentSkills, agent
                 )}
               </div>
             </div>
+
+            {subAgents.length > 0 && (
+              <div>
+                <p className="text-xs font-semibold text-ink mb-2">Sub-agentes</p>
+                <div className="space-y-2">
+                  {subAgents.map((sub) => (
+                    <div key={sub.id} className="flex items-center gap-3 pl-3 py-2 border-l-2 border-violet-200 bg-violet-50/30 rounded-r-lg">
+                      <span className="text-lg">{sub.icon}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs font-semibold text-ink">{sub.name}</p>
+                          <StatusBadge status={sub.status} />
+                        </div>
+                        <p className="text-[11px] text-muted mt-0.5">{sub.description}</p>
+                      </div>
+                      <div className="flex flex-wrap gap-1 shrink-0">
+                        {sub.tags.slice(0, 3).map((tag) => (
+                          <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded bg-surface text-muted">{tag}</span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
