@@ -1,36 +1,61 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Taques Agents — Painel de Orquestração
 
-## Getting Started
+Dashboard de orquestração de agentes para o escritório Taques Advogados, implementando os 3 pilares do ecossistema agêntico:
 
-First, run the development server:
+- **MCP** (Model Context Protocol) — agente ↔ ferramentas
+- **A2A** (Agent-to-Agent) — agente ↔ agente
+- **AG-UI** (Agent-User Interaction) — agente ↔ usuário
+
+## Módulos
+
+| Aba | Descrição |
+|-----|-----------|
+| **Dashboard** | 3 métricas (agentes ativos, tarefas em andamento, pendentes) + feed de atividades |
+| **Tarefas** | Lista cronológica com filtros, barra de progresso e ações HITL (aprovar/rejeitar) |
+| **Agentes** | Cards expandíveis por departamento (Jurídico + Técnico), com skills e MCPs vinculados |
+| **Capacidades** | 3 subabas: Skills (com toggle), Automações (com toggle), MCPs (status + ferramentas) |
+| **Linha do Tempo** | Timeline visual cronológica de todas as atividades do sistema |
+
+## Stack
+
+- **Frontend:** Next.js 16 + React 19 + Tailwind CSS 4
+- **Backend:** Supabase (PostgreSQL)
+- **Deploy:** Vercel
+- **Sync:** `sync-registry.py` (escaneia SKILL.md → Supabase)
+
+## Rodar localmente
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
+bun install
+# criar .env.local com NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Deploy
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+O deploy é automático via Vercel. Cada push para `main` dispara um novo build.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+O hook do Claude Code também sincroniza dados: editar um `SKILL.md` → `sync-registry.py` atualiza Supabase → dashboard reflete.
 
-## Learn More
+## Banco de dados (Supabase)
 
-To learn more about Next.js, take a look at the following resources:
+```
+agents          — id, name, department, level, role, framework, status, description, icon, tags
+skills          — id, name, description, type_label, department, icon, tags, status, is_active, path, passos
+tasks           — id, agent_id, name, status, progress, requires_approval, error_message, started_at
+automations     — id, name, type_label, description, trigger_type, trigger_config, agent_id, tags, status
+mcp_servers     — id, name, url, status, tools_available
+agent_skills    — agent_id, skill_id (N:N)
+agent_mcps      — agent_id, mcp_id (N:N)
+activity_log    — id, timestamp, agent_id, action, details, event_type
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Paleta de cores
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Cor | Hex | Uso |
+|-----|-----|-----|
+| Primary | `#223631` | Header, botões ativos, badges |
+| Accent | `#4a8c6f` | Links, progresso |
+| Cream | `#eae0d5` | Background |
+| Beige | `#d6ccc1` | Bordas, separadores |
+| Ink | `#0a0908` | Texto principal |
