@@ -1,7 +1,8 @@
 export interface Agent {
   id: string
   name: string
-  department: 'juridico' | 'tecnico' | 'geral' | 'administrativo' | 'comercial'
+  department: 'juridico' | 'tecnico' | 'administrativo' | 'comercial' | 'gabinete-ceo' | 'inteligencia'
+  nucleus: 'ambiental' | 'cobrancas' | 'generalista' | null
   level: number
   role: string | null
   framework: string
@@ -69,6 +70,52 @@ export interface McpServer {
   status: 'connected' | 'disconnected' | 'error' | 'unknown'
   tools_available: string[]
   created_at: string
+}
+
+export interface FlowNode {
+  id: string
+  type: 'start' | 'end' | 'agent' | 'human' | 'tool' | 'conditional'
+  label: string
+  agent_id?: string
+  description?: string
+}
+
+export interface FlowEdge {
+  source: string
+  target: string
+  label?: string
+  condition?: string
+}
+
+export interface FlowParameter {
+  id: string
+  name: string
+  label: string
+  type: 'text' | 'number' | 'email' | 'date' | 'select' | 'textarea'
+  description?: string
+  required: boolean
+  options?: { value: string; label: string }[]
+  placeholder?: string
+  default_value?: string | number
+}
+
+export interface Flow {
+  id: string
+  name: string
+  description: string | null
+  status: 'draft' | 'active' | 'inactive' | 'planned'
+  department: string
+  icon: string | null
+  tags: string[]
+  graph: {
+    nodes: FlowNode[]
+    edges: FlowEdge[]
+  }
+  parameters: FlowParameter[] | null
+  trigger_agent_id: string | null
+  requires_approval: boolean
+  created_at: string
+  updated_at: string
 }
 
 export interface ActivityLog {

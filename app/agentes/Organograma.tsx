@@ -25,6 +25,20 @@ const DEPT_LABELS: Record<string, string> = {
   inteligencia: 'Dept. Inteligência',
 }
 
+const NUCLEUS_COLORS: Record<string, { fill: string; stroke: string; text: string }> = {
+  ambiental: { fill: '#ecfdf5', stroke: '#10b981', text: '#065f46' },
+  cobrancas: { fill: '#eff6ff', stroke: '#3b82f6', text: '#1e40af' },
+  generalista: { fill: '#f8fafc', stroke: '#64748b', text: '#334155' },
+}
+
+const NUCLEUS_LABELS: Record<string, string> = {
+  ambiental: '🌿 Núcleo Ambiental',
+  cobrancas: '💰 Núcleo Cobranças',
+  generalista: '⚖️ Núcleo Generalista',
+}
+
+const NUCLEUS_ORDER = ['ambiental', 'cobrancas', 'generalista']
+
 const STATUS_FILLS: Record<string, string> = {
   active: '#dcfce7',
   prototype: '#fef3c7',
@@ -48,7 +62,7 @@ const STATUS_LABEL: Record<string, string> = {
 }
 
 const NW = 200, NH = 58
-const SUB_W = 130, SUB_H = 40
+const SUB_W = 180, SUB_H = 42
 const CEO_W = 250, CEO_H = 70
 
 export default function Organograma({ agents }: Props) {
@@ -80,7 +94,8 @@ export default function Organograma({ agents }: Props) {
   // Layout calculations
   const nonCeoDepts = Object.keys(departments).filter(d => d !== 'gabinete-ceo')
   const DEPT_GAP = 280
-  const totalWidth = nonCeoDepts.length * DEPT_GAP
+  const extraNucleiCols = nonCeoDepts.includes('juridico') ? (NUCLEUS_ORDER.length - 1) : 0
+  const totalWidth = (nonCeoDepts.length + extraNucleiCols) * DEPT_GAP
   const centerX = totalWidth / 2 + 140
 
   const CEO_Y = 30
@@ -192,63 +207,36 @@ export default function Organograma({ agents }: Props) {
     )
   })
 
-  // Non-CEO departments
-  nonCeoDepts.forEach((dept, di) => {
-    const dx = 140 + di * DEPT_GAP
-    const dcx = dx + 110
-    const dc = DEPT_COLORS[dept] || DEPT_COLORS.geral
-    const deptAgents = departments[dept] || []
+  // Helper to render a column of agents under a given center X
+  function renderAgentColumn(
+    columnAgents: Agent[],
+    columnCx: number,
+    startY: number,
+    startBottomY: number,
+    colorSet: { fill: string; stroke: string; text: string },
+  ) {
+    let currentAgentY = startY
+    let prevAgentBottomY = startBottomY
 
-    // Connection from CEO to department
-    elements.push(
-      <g key={keyIdx++}>
-        <path d={`M${centerX},${CEO_Y + CEO_H} L${centerX},${DEPT_Y - 30} L${dcx},${DEPT_Y - 30} L${dcx},${DEPT_Y}`}
-          fill="none" stroke="#cbd5e1" strokeWidth={1.5} markerEnd="url(#arrow)" />
-      </g>
-    )
-
-    // Department box
-    const dw = 220
-    elements.push(
-      <g key={keyIdx++}>
-        <rect x={dcx - dw / 2} y={DEPT_Y} width={dw} height={50} rx={8}
-          fill={dc.fill} stroke={dc.stroke} strokeWidth={1.5} />
-        <text x={dcx} y={DEPT_Y + 20} textAnchor="middle" fontSize={10} fontWeight={700} fill={dc.text}>
-          {DEPT_LABELS[dept] || dept}
-        </text>
-        <text x={dcx} y={DEPT_Y + 36} textAnchor="middle" fontSize={8} fill="#94a3b8">
-          {deptAgents.length} agente{deptAgents.length !== 1 ? 's' : ''}
-        </text>
-      </g>
-    )
-
-    // Agent nodes — cumulative Y to accommodate sub-blocks below each agent
-    let currentAgentY = AGENT_START_Y
-    let prevAgentBottomY = DEPT_Y + 50
-
-    deptAgents.forEach((ag) => {
-      const ax = dcx - NW / 2
+    columnAgents.forEach((ag) => {
+      const ax = columnCx - NW / 2
       const ay = currentAgentY
-      const acx2 = dcx
       const op = opacity(ag.status)
       const sf = STATUS_FILLS[ag.status] || STATUS_FILLS.planned
-      const dc2 = DEPT_COLORS[dept] || DEPT_COLORS.geral
       const ss = STATUS_STROKES[ag.status] || STATUS_STROKES.planned
       const subs = getSubAgents(ag.id)
 
-      // Connection from dept/prev element
       elements.push(
-        <line key={keyIdx++} x1={dcx} y1={prevAgentBottomY} x2={acx2} y2={ay}
+        <line key={keyIdx++} x1={columnCx} y1={prevAgentBottomY} x2={columnCx} y2={ay}
           stroke="#cbd5e1" strokeWidth={1.5} markerEnd="url(#arrow)" opacity={op} />
       )
 
-      // Agent box
       elements.push(
         <g key={keyIdx++} opacity={op}>
           <rect x={ax} y={ay} width={NW} height={NH} rx={7}
-            fill={sf} stroke={dc2.stroke} strokeWidth={1} />
+            fill={sf} stroke={colorSet.stroke} strokeWidth={1} />
           <text x={ax + 10} y={ay + 16} fontSize={13}>{ag.icon || '🤖'}</text>
-          <text x={ax + 30} y={ay + 16} fontSize={8.5} fontWeight={600} fill={dc2.text}>
+          <text x={ax + 30} y={ay + 16} fontSize={8.5} fontWeight={600} fill={colorSet.text}>
             {ag.name.length > 24 ? ag.name.substring(0, 24) + '..' : ag.name}
           </text>
           <text x={ax + 10} y={ay + 32} fontSize={7.5} fill="#64748b">
@@ -261,21 +249,15 @@ export default function Organograma({ agents }: Props) {
         </g>
       )
 
-      // Sub-agents — 2-column grid below parent (avoids horizontal overflow)
       if (subs.length > 0) {
-        const subCols = subs.length === 1 ? 1 : 2
-        const subGapX = 8, subGapY = 8, subTopGap = 12
-        const subTotalW = subCols * SUB_W + (subCols - 1) * subGapX
-        const subStartX = dcx - subTotalW / 2
+        const subGapY = 6, subTopGap = 12
+        const subStartX = columnCx - SUB_W / 2
         const subStartY = ay + NH + subTopGap
-        const numSubRows = Math.ceil(subs.length / subCols)
-        const subBlockH = numSubRows * SUB_H + (numSubRows - 1) * subGapY
+        const subBlockH = subs.length * SUB_H + (subs.length - 1) * subGapY
 
         subs.forEach((sub, si) => {
-          const col = si % subCols
-          const row = Math.floor(si / subCols)
-          const sx = subStartX + col * (SUB_W + subGapX)
-          const sy = subStartY + row * (SUB_H + subGapY)
+          const sx = subStartX
+          const sy = subStartY + si * (SUB_H + subGapY)
           const sCx = sx + SUB_W / 2
           const sop = opacity(sub.status)
           const ssf = STATUS_FILLS[sub.status] || STATUS_FILLS.planned
@@ -283,7 +265,7 @@ export default function Organograma({ agents }: Props) {
 
           elements.push(
             <g key={keyIdx++} opacity={sop}>
-              <line x1={dcx} y1={ay + NH} x2={sCx} y2={sy}
+              <line x1={columnCx} y1={ay + NH} x2={sCx} y2={sy}
                 stroke="#cbd5e1" strokeWidth={1} strokeDasharray="4,3" markerEnd="url(#arrow)" />
               <rect x={sx} y={sy} width={SUB_W} height={SUB_H} rx={5}
                 fill={ssf} stroke="#cbd5e1" strokeWidth={1} />
@@ -299,14 +281,116 @@ export default function Organograma({ agents }: Props) {
           )
         })
 
-        // Next agent connects from bottom of sub-block
-        prevAgentBottomY = ay + NH + subTopGap + subBlockH + 16
+        const subTopGapVal = 12
+        prevAgentBottomY = ay + NH + subTopGapVal + subBlockH + 16
         currentAgentY = prevAgentBottomY + 14
       } else {
         prevAgentBottomY = ay + NH
         currentAgentY += AGENT_GAP
       }
     })
+  }
+
+  // Non-CEO departments
+  const NUC_GAP = 240
+  nonCeoDepts.forEach((dept, di) => {
+    const isJuridico = dept === 'juridico'
+    const deptAgents = departments[dept] || []
+
+    if (isJuridico) {
+      // Juridico spans 3 nucleus columns
+      const nucCount = NUCLEUS_ORDER.length
+      const juridicoCenterX = 140 + di * DEPT_GAP + (nucCount - 1) * NUC_GAP / 2
+      const dc = DEPT_COLORS.juridico
+
+      // Connection from CEO to juridico department box
+      elements.push(
+        <g key={keyIdx++}>
+          <path d={`M${centerX},${CEO_Y + CEO_H} L${centerX},${DEPT_Y - 30} L${juridicoCenterX},${DEPT_Y - 30} L${juridicoCenterX},${DEPT_Y}`}
+            fill="none" stroke="#cbd5e1" strokeWidth={1.5} markerEnd="url(#arrow)" />
+        </g>
+      )
+
+      // Main juridico department box (wider)
+      const jdw = nucCount * NUC_GAP + 40
+      elements.push(
+        <g key={keyIdx++}>
+          <rect x={juridicoCenterX - jdw / 2} y={DEPT_Y} width={jdw} height={50} rx={8}
+            fill={dc.fill} stroke={dc.stroke} strokeWidth={1.5} />
+          <text x={juridicoCenterX} y={DEPT_Y + 20} textAnchor="middle" fontSize={10} fontWeight={700} fill={dc.text}>
+            {DEPT_LABELS.juridico}
+          </text>
+          <text x={juridicoCenterX} y={DEPT_Y + 36} textAnchor="middle" fontSize={8} fill="#94a3b8">
+            {deptAgents.length} agente{deptAgents.length !== 1 ? 's' : ''} · {nucCount} núcleos
+          </text>
+        </g>
+      )
+
+      // Render each nucleus as a sub-column
+      const NUC_BOX_Y = DEPT_Y + 70
+      const NUC_AGENT_START_Y = NUC_BOX_Y + 60
+
+      NUCLEUS_ORDER.forEach((nuc, ni) => {
+        const nucCx = 140 + di * DEPT_GAP + ni * NUC_GAP
+        const nc = NUCLEUS_COLORS[nuc] || NUCLEUS_COLORS.generalista
+        const nucAgents = deptAgents.filter(a => a.nucleus === nuc)
+
+        // Connection from dept to nucleus
+        elements.push(
+          <line key={keyIdx++} x1={juridicoCenterX} y1={DEPT_Y + 50} x2={nucCx} y2={NUC_BOX_Y}
+            stroke={nc.stroke} strokeWidth={1.5} markerEnd="url(#arrow)" />
+        )
+
+        // Nucleus box
+        const nw = 210
+        elements.push(
+          <g key={keyIdx++}>
+            <rect x={nucCx - nw / 2} y={NUC_BOX_Y} width={nw} height={44} rx={6}
+              fill={nc.fill} stroke={nc.stroke} strokeWidth={1.5} />
+            <text x={nucCx} y={NUC_BOX_Y + 18} textAnchor="middle" fontSize={9} fontWeight={700} fill={nc.text}>
+              {NUCLEUS_LABELS[nuc] || nuc}
+            </text>
+            <text x={nucCx} y={NUC_BOX_Y + 32} textAnchor="middle" fontSize={7.5} fill="#94a3b8">
+              {nucAgents.length === 0 ? 'sem agentes ainda' : `${nucAgents.length} agente${nucAgents.length > 1 ? 's' : ''}`}
+            </text>
+          </g>
+        )
+
+        // Render agents under this nucleus
+        if (nucAgents.length > 0) {
+          renderAgentColumn(nucAgents, nucCx, NUC_AGENT_START_Y, NUC_BOX_Y + 44, nc)
+        }
+      })
+    } else {
+      // Non-juridico departments — offset by extra space taken by juridico nuclei
+      const extraOffset = (NUCLEUS_ORDER.length - 1) * NUC_GAP
+      const dx = 140 + di * DEPT_GAP + (di > nonCeoDepts.indexOf('juridico') ? extraOffset : 0)
+      const dcx = dx + 110
+      const dc = DEPT_COLORS[dept] || { fill: '#f8fafc', stroke: '#94a3b8', text: '#334155' }
+
+      elements.push(
+        <g key={keyIdx++}>
+          <path d={`M${centerX},${CEO_Y + CEO_H} L${centerX},${DEPT_Y - 30} L${dcx},${DEPT_Y - 30} L${dcx},${DEPT_Y}`}
+            fill="none" stroke="#cbd5e1" strokeWidth={1.5} markerEnd="url(#arrow)" />
+        </g>
+      )
+
+      const dw = 220
+      elements.push(
+        <g key={keyIdx++}>
+          <rect x={dcx - dw / 2} y={DEPT_Y} width={dw} height={50} rx={8}
+            fill={dc.fill} stroke={dc.stroke} strokeWidth={1.5} />
+          <text x={dcx} y={DEPT_Y + 20} textAnchor="middle" fontSize={10} fontWeight={700} fill={dc.text}>
+            {DEPT_LABELS[dept] || dept}
+          </text>
+          <text x={dcx} y={DEPT_Y + 36} textAnchor="middle" fontSize={8} fill="#94a3b8">
+            {deptAgents.length} agente{deptAgents.length !== 1 ? 's' : ''}
+          </text>
+        </g>
+      )
+
+      renderAgentColumn(deptAgents, dcx, AGENT_START_Y, DEPT_Y + 50, dc)
+    }
   })
 
   const totalAgents = agents.length

@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/reordenar-rituais",
+      "schedule": "1 0 * * *"
+    }
+  ]
+}

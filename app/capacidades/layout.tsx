@@ -7,6 +7,7 @@ const subtabs = [
   { href: '/capacidades/skills', label: 'Skills' },
   { href: '/capacidades/automacoes', label: 'Automações' },
   { href: '/capacidades/mcps', label: 'MCPs' },
+  { href: '/capacidades/fluxos', label: 'Fluxos' },
 ]
 
 export default function CapacidadesLayout({ children }: { children: React.ReactNode }) {
